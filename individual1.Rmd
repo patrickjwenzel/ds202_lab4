@@ -1,0 +1,59 @@
+---
+title: "lab 4"
+author: "Kordell Schrock"
+date: "10/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(hash)
+library(dplyr)
+library(ggplot2)
+library(devtools)
+library(data.table)
+library(anytime)
+library(data.table)
+library(knitr)
+library(tidyr)
+library(reshape2)
+```
+
+```{r}
+library(readxl)
+defense <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Defensive')
+offense <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Offensive')
+biography <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Biography')
+str(defense)
+```
+```{r}
+
+offenseClean <- offense %>%
+  mutate(Name = factor(Name),
+         Opponent_Opponent = factor(Opponent_Opponent)) %>%
+  mutate(across(Rushing_ATT:Passing_INT, as.numeric))
+    #cleaning the offense
+
+defenseClean <- defense %>%
+  mutate(Name = factor(Name),
+         Opponent_Opponent=factor(Opponent_Opponent)) %>%
+  mutate(across(Tackles_Solo:Pass_PB, as.numeric))
+  #cleaning the defense
+
+biographyClean <- biography %>%
+  mutate(Weight = as.numeric(Weight)) %>%
+  separate(Height, c("feet","inches"), "-") %>%
+  mutate(Height = as.numeric(feet)* 12 + as.numeric(inches)) %>%
+  select(-feet, -inches)
+  #cleaning the biography
+
+str(defenseClean)
+str(offenseClean)
+str(biographyClean)
+
+```
+
