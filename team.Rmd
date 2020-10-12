@@ -1,5 +1,5 @@
 ---
-title: "team"
+title: "Lab 4 Team 27"
 author: "Patrick Wenzel, Kordell Schrock"
 date: "10/11/2020"
 output: html_document
@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(dplyr.summarise.inform = FALSE)
+options(dplyr.tibble.inform = FALSE)
 ```
 
 ```{r, include=FALSE}
@@ -30,7 +32,9 @@ offense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Offensive')
 biography <- read_excel('./cyclonesFootball2019.xlsx', sheet='Biography')
 str(defense)
 ```
+
 ## Part 1: Cleaning data
+
 ```{r}
 
 offenseClean <- offense %>%
@@ -58,6 +62,7 @@ str(biographyClean) #print dataset
 
 ```
 # Part 2: Tidying
+
 ## Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
 
 ```{r}
@@ -65,7 +70,9 @@ str(biographyClean) #print dataset
 defenseClean<-defenseClean %>%
   pivot_longer(Tackles_Solo:Pass_PB, names_to = 'stat')
 ```
+
 ## 2 Compare the distributions of the defensive statistics. What defensive skills are rare?
+
 ### 2: While looking at the BarChart we see that TurnOver_FF, TurnOver_FR, and TurnOver_INT are the rarest. Then looking into the Histogram we see again that TurnOver_FF, TurnOver_FR, and TurnOver_INT are the rarest. 
 
 ```{r}
@@ -86,6 +93,7 @@ ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat =
 ## 3. Did ISU have better defense against Iowa or Notre Dame? Answer this question by creating a scatterplot with x- and y-axes being the number of solo tackles (of each player). A large number of solo tackles is an indicator of good defense.
  
 ### 3: Looking at the Scatter Plot Notre Dame seems to have higher counts of Solo Tackles per player. So Notre Dame must have had a better defence than Iowa. Also looking at the statistical data of aggregating the teams with solo tackles we see again Notre Dame beats Iowa in sum of Tackles and average tackles per player.
+
 ```{r}
 #3
 iowaVSnotreDame <- defenseClean %>%
@@ -103,14 +111,18 @@ ggplot(iowaVSnotreDame, aes(x = value, y = Name)) + facet_wrap(iowaVSnotreDame$t
 #Create scater plot of Iowa and Notre Dame Players for Solo Tackles for each player.
 # Use facet_wrap() to to show teams variables: Iowa and Notre Dame
 ```
+
 ## 4. Separate the Hometown column into two columns, namely the city and the state. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
+
 ```{r}
 #4
 biographyClean <- biographyClean %>%
   separate(Hometown, c('City', 'State'), sep =", ") #create 2 columns City and State from Hometown.
 head(biographyClean) #head of clean biography dataset
 ```
+
 ## How many players are there from each state?
+
 ```{r}
 #5
 playersPerState <- biographyClean %>%
@@ -119,3 +131,64 @@ playersPerState <- biographyClean %>%
      
 print(playersPerState) #print dataset
 ```
+
+## Part Three: Joining Data Frames
+
+1. Find which states do the ISU defensive and offensive players come from. Create an appropriate summary.
+
+```{r}
+defenseNames <- as_tibble_col(unique(defenseClean$Name)) %>% rename(
+  Name = value
+)
+
+defenseStates <- left_join(x = defenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+defenseStates <-as_tibble_col(unique(defenseStates$State)) %>% rename(
+  State = value
+)
+
+offenseNames <- as_tibble_col(unique(offenseClean$Name)) %>% rename(
+  Name = value
+)
+offenseStates <- left_join(x = offenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+
+offenseStates <- as_tibble_col(unique(offenseStates$State)) %>% rename(
+  State = value
+)
+allStates = NULL
+allStates$defenseStates <- defenseStates$State
+allStates$offenseStates <- append(offenseStates$State, '')
+as_tibble(allStates)
+```
+
+2. How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+
+```{r}
+performanceStats <- defenseClean %>% pivot_wider(names_from='stat', values_from='value') %>% full_join(offenseClean, by=c('Name', 'Opponent_Opponent')) %>% pivot_longer(c(-Name, -Opponent_Opponent), names_to='stat') %>% mutate(value = ifelse(is.na(value), 0, value)) 
+
+greaterBrockStats <- performanceStats %>% filter(Name != 'Purdy, Brock') %>% group_by(stat) %>% summarize(team = mean(value)) %>% inner_join(performanceStats %>% filter(Name == 'Purdy, Brock') %>% group_by(stat) %>% summarize(Brock = mean(value)), by='stat') %>% filter(Brock > team) %>% select(stat)
+
+# The code above takes the average of the defense and offense statistics categories and then combines those to using a full join. We are setting NA to 0 since this means this player did not have any statistics in this category. Finally, we are grabbing the statistics where Brock has a higher average performance in compared to everyone else on the team.
+
+greaterBrockStats
+```
+
+    From what we can see, Brock Purdy's has a better average performance in the 7 categories above than the ISU team. It makes sense that he has a better average performance in passing interceptions, passing touchdowns, and passing yards since he is the quarter back and these are stats for things that a quarter back either does or is still tied to during the play. I haven't been watching the games but maybe the reason Brock has a higher average performance for rushing attemps is that he is having more running plays called for him and he could get most of his rushing touchdowns from QB sneaks when ISU is close to the end zone.
+
+3. Which ISU player(s) made big progress over the last year?
+
+```{r}
+offense2018 <- read_excel('./cyclonesFootball2018.xlsx', sheet = "Offensive")
+offenseClean2018 <- offense2018 %>% mutate(Name = factor(Name)) %>% rename(Opponent = Opponent_Opponent) %>% mutate(Opponent = factor(Opponent)) %>% mutate_if(is.character, as.numeric) %>% pivot_wider(Name:Receiving_YDS, names_from = Opponent)
+
+yards2018 <- aggregate(Receiving_YDS ~ Name, data = offenseClean2018, FUN = sum)
+
+off19 <- offense %>% mutate(Name = factor(Name)) %>% rename(Opponent = Opponent_Opponent) %>% mutate(Opponent = factor(Opponent)) %>% mutate_if(is.character, as.numeric) %>% pivot_wider(Name:Receiving_YDS, names_from = Opponent)
+
+yards2019 <- aggregate(Receiving_YDS ~ Name, data = off19, FUN = sum)
+
+yearComparison <- yards2018 %>% inner_join(yards2019, by = c(Name = "Name")) %>% rename(yards2018 = Receiving_YDS.x, yards2019 = Receiving_YDS.y) %>% group_by(Name) %>% filter(yards2019 > yards2018)
+
+yearComparison
+```
+
+    For this quesiton, I compared receiving yards between 2018 and 2019. The players who dramatically improved are Chase Allen, Desaunte Jones, Charlie Kolar, Johnnie Lang, and Tarique Milton. I did this by first getting the sum of the players' receiving yards in 2018, then getting the sum of the players' receiving yards in 2019, and then joining those two tables together.
