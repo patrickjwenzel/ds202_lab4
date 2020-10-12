@@ -463,9 +463,9 @@ defenseClean&lt;-defenseClean %&gt;%
 sumOfStats &lt;- defenseClean %&gt;%
   group_by(stat) %&gt;%
   summarise(sum = sum(value)) %&gt;%
-  arrange(sum)</code></pre>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre class="r"><code>print(sumOfStats)</code></pre>
+  arrange(sum)
+
+print(sumOfStats)</code></pre>
 <pre><code>## # A tibble: 9 x 2
 ##   stat           sum
 ##   &lt;chr&gt;        &lt;dbl&gt;
@@ -519,9 +519,9 @@ playersPerState &lt;- biographyClean %&gt;%
       group_by(State) %&gt;%
       summarize(count = n()) %&gt;%
       distinct(State, count) %&gt;%
-      arrange(desc(count), State)</code></pre>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<pre class="r"><code>print(playersPerState)</code></pre>
+      arrange(desc(count), State)
+
+print(playersPerState)</code></pre>
 <pre><code>## # A tibble: 19 x 2
 ##    State     count
 ##    &lt;chr&gt;     &lt;int&gt;
@@ -587,6 +587,58 @@ as_tibble(allStates)</code></pre>
 ## 11 Ark.          &quot;Ill.&quot;       
 ## 12 Okla.         &quot;Ohio&quot;       
 ## 13 Kan.          &quot;&quot;</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?</li>
+</ol>
+<pre class="r"><code>performanceStats &lt;- defenseClean %&gt;% pivot_wider(names_from=&#39;stat&#39;, values_from=&#39;value&#39;) %&gt;% full_join(offenseClean, by=c(&#39;Name&#39;, &#39;Opponent_Opponent&#39;)) %&gt;% pivot_longer(c(-Name, -Opponent_Opponent), names_to=&#39;stat&#39;) %&gt;% mutate(value = ifelse(is.na(value), 0, value)) 
+
+greaterBrockStats &lt;- performanceStats %&gt;% filter(Name != &#39;Purdy, Brock&#39;) %&gt;% group_by(stat) %&gt;% summarize(team = mean(value)) %&gt;% inner_join(performanceStats %&gt;% filter(Name == &#39;Purdy, Brock&#39;) %&gt;% group_by(stat) %&gt;% summarize(Brock = mean(value)), by=&#39;stat&#39;) %&gt;% filter(Brock &gt; team) %&gt;% select(stat)
+
+# The code above takes the average of the defense and offense statistics categories and then combines those to using a full join. We are setting NA to 0 since this means this player did not have any statistics in this category. Finally, we are grabbing the statistics where Brock has a higher average performance in compared to everyone else on the team.
+
+greaterBrockStats</code></pre>
+<pre><code>## # A tibble: 6 x 1
+##   stat       
+##   &lt;chr&gt;      
+## 1 Passing_INT
+## 2 Passing_TD 
+## 3 Passing_YDS
+## 4 Rushing_ATT
+## 5 Rushing_TD 
+## 6 Rushing_YDS</code></pre>
+<pre><code>From what we can see, Brock Purdy&#39;s has a better average performance in the 7 categories above than the ISU team. It makes sense that he has a better average performance in passing interceptions, passing touchdowns, and passing yards since he is the quarter back and these are stats for things that a quarter back either does or is still tied to during the play. I haven&#39;t been watching the games but maybe the reason Brock has a higher average performance for rushing attemps is that he is having more running plays called for him and he could get most of his rushing touchdowns from QB sneaks when ISU is close to the end zone.</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Which ISU player(s) made big progress over the last year?</li>
+</ol>
+<pre class="r"><code>offense2018 &lt;- read_excel(&#39;./cyclonesFootball2018.xlsx&#39;, sheet = &quot;Offensive&quot;)
+offenseClean2018 &lt;- offense2018 %&gt;% mutate(Name = factor(Name)) %&gt;% rename(Opponent = Opponent_Opponent) %&gt;% mutate(Opponent = factor(Opponent)) %&gt;% mutate_if(is.character, as.numeric) %&gt;% pivot_wider(Name:Receiving_YDS, names_from = Opponent)</code></pre>
+<pre><code>## Warning: Problem with `mutate()` input `Passing_CMP-ATT`.
+## i NAs introduced by coercion
+## i Input `Passing_CMP-ATT` is `.Primitive(&quot;as.double&quot;)(`Passing_CMP-ATT`)`.</code></pre>
+<pre><code>## Warning in mask$eval_all_mutate(dots[[i]]): NAs introduced by coercion</code></pre>
+<pre class="r"><code>yards2018 &lt;- aggregate(Receiving_YDS ~ Name, data = offenseClean2018, FUN = sum)
+
+off19 &lt;- offense %&gt;% mutate(Name = factor(Name)) %&gt;% rename(Opponent = Opponent_Opponent) %&gt;% mutate(Opponent = factor(Opponent)) %&gt;% mutate_if(is.character, as.numeric) %&gt;% pivot_wider(Name:Receiving_YDS, names_from = Opponent)</code></pre>
+<pre><code>## Warning: Problem with `mutate()` input `Passing_CMP-ATT`.
+## i NAs introduced by coercion
+## i Input `Passing_CMP-ATT` is `.Primitive(&quot;as.double&quot;)(`Passing_CMP-ATT`)`.
+
+## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>yards2019 &lt;- aggregate(Receiving_YDS ~ Name, data = off19, FUN = sum)
+
+yearComparison &lt;- yards2018 %&gt;% inner_join(yards2019, by = c(Name = &quot;Name&quot;)) %&gt;% rename(yards2018 = Receiving_YDS.x, yards2019 = Receiving_YDS.y) %&gt;% group_by(Name) %&gt;% filter(yards2019 &gt; yards2018)
+
+yearComparison</code></pre>
+<pre><code>## # A tibble: 5 x 3
+## # Groups:   Name [5]
+##   Name             yards2018 yards2019
+##   &lt;fct&gt;                &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Allen, Chase            84       145
+## 2 Jones, Deshaunte       366       877
+## 3 Kolar, Charlie         134       697
+## 4 Lang, Johnnie           30        54
+## 5 Milton, Tarique        417       722</code></pre>
+<pre><code>For this quesiton, I compared receiving yards between 2018 and 2019. The players who dramatically improved are Chase Allen, Desaunte Jones, Charlie Kolar, Johnnie Lang, and Tarique Milton. I did this by first getting the sum of the players&#39; receiving yards in 2018, then getting the sum of the players&#39; receiving yards in 2019, and then joining those two tables together.</code></pre>
 </div>
 </div>
 

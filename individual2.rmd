@@ -7,6 +7,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(dplyr.summarise.inform = FALSE)
+options(dplyr.tibble.inform = FALSE)
+options(dplyr.mutate.inform = FALSE)
 ```
 
 ```{r, include=FALSE}
@@ -146,10 +149,35 @@ as_tibble(allStates)
 2. How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
 
 ```{r}
+performanceStats <- defenseClean %>% pivot_wider(names_from='stat', values_from='value') %>% full_join(offenseClean, by=c('Name', 'Opponent_Opponent')) %>% pivot_longer(c(-Name, -Opponent_Opponent), names_to='stat') %>% mutate(value = ifelse(is.na(value), 0, value)) 
 
+greaterBrockStats <- performanceStats %>% filter(Name != 'Purdy, Brock') %>% group_by(stat) %>% summarize(team = mean(value)) %>% inner_join(performanceStats %>% filter(Name == 'Purdy, Brock') %>% group_by(stat) %>% summarize(Brock = mean(value)), by='stat') %>% filter(Brock > team) %>% select(stat)
+
+# The code above takes the average of the defense and offense statistics categories and then combines those to using a full join. We are setting NA to 0 since this means this player did not have any statistics in this category. Finally, we are grabbing the statistics where Brock has a higher average performance in compared to everyone else on the team.
+
+greaterBrockStats
 ```
 
+    From what we can see, Brock Purdy's has a better average performance in the 7 categories above than the ISU team. It makes sense that he has a better average performance in passing interceptions, passing touchdowns, and passing yards since he is the quarter back and these are stats for things that a quarter back either does or is still tied to during the play. I haven't been watching the games but maybe the reason Brock has a higher average performance for rushing attemps is that he is having more running plays called for him and he could get most of his rushing touchdowns from QB sneaks when ISU is close to the end zone.
 
+3. Which ISU player(s) made big progress over the last year?
+
+```{r}
+offense2018 <- read_excel('./cyclonesFootball2018.xlsx', sheet = "Offensive")
+offenseClean2018 <- offense2018 %>% mutate(Name = factor(Name)) %>% rename(Opponent = Opponent_Opponent) %>% mutate(Opponent = factor(Opponent)) %>% mutate_if(is.character, as.numeric) %>% pivot_wider(Name:Receiving_YDS, names_from = Opponent)
+
+yards2018 <- aggregate(Receiving_YDS ~ Name, data = offenseClean2018, FUN = sum)
+
+off19 <- offense %>% mutate(Name = factor(Name)) %>% rename(Opponent = Opponent_Opponent) %>% mutate(Opponent = factor(Opponent)) %>% mutate_if(is.character, as.numeric) %>% pivot_wider(Name:Receiving_YDS, names_from = Opponent)
+
+yards2019 <- aggregate(Receiving_YDS ~ Name, data = off19, FUN = sum)
+
+yearComparison <- yards2018 %>% inner_join(yards2019, by = c(Name = "Name")) %>% rename(yards2018 = Receiving_YDS.x, yards2019 = Receiving_YDS.y) %>% group_by(Name) %>% filter(yards2019 > yards2018)
+
+yearComparison
+```
+
+    For this quesiton, I compared receiving yards between 2018 and 2019. The players who dramatically improved are Chase Allen, Desaunte Jones, Charlie Kolar, Johnnie Lang, and Tarique Milton. I did this by first getting the sum of the players' receiving yards in 2018, then getting the sum of the players' receiving yards in 2019, and then joining those two tables together.
 
 
 
