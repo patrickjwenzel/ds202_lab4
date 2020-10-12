@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, include=FALSE}
 library(tidyverse)
 library(hash)
 library(dplyr)
@@ -25,9 +25,9 @@ library(reshape2)
 
 ```{r}
 library(readxl)
-defense <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Defensive')
-offense <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Offensive')
-biography <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Biography')
+defense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Defensive')
+offense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Offensive')
+biography <- read_excel('./cyclonesFootball2019.xlsx', sheet='Biography')
 str(defense)
 ```
 ## Part 1: Cleaning data

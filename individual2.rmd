@@ -1,0 +1,157 @@
+---
+title: "Lab 4"
+author: "Patrick Wenzel"
+date: "10/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(hash)
+library(dplyr)
+library(ggplot2)
+library(devtools)
+library(data.table)
+library(anytime)
+library(data.table)
+library(knitr)
+library(tidyr)
+library(reshape2)
+```
+
+```{r}
+library(readxl)
+defense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Defensive')
+offense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Offensive')
+biography <- read_excel('./cyclonesFootball2019.xlsx', sheet='Biography')
+str(defense)
+```
+
+## Part 1: Cleaning data
+
+```{r}
+
+offenseClean <- offense %>%
+  mutate(Name = factor(Name),
+         Opponent_Opponent = factor(Opponent_Opponent)) %>%
+  mutate(across(Rushing_ATT:Passing_INT, as.numeric))
+    #cleaning the offense
+
+defenseClean <- defense %>%
+  mutate(Name = factor(Name),
+         Opponent_Opponent=factor(Opponent_Opponent)) %>%
+  mutate(across(Tackles_Solo:Pass_PB, as.numeric))
+  #cleaning the defense
+
+biographyClean <- biography %>%
+  mutate(Weight = as.numeric(Weight)) %>%
+  separate(Height, c("feet","inches"), "-") %>%
+  mutate(Height = as.numeric(feet)* 12 + as.numeric(inches)) %>%
+  select(-feet, -inches)
+  #cleaning the biography
+
+str(defenseClean)
+str(offenseClean)
+str(biographyClean)
+
+```
+
+## Part 2: Tidying
+
+# Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+
+```{r}
+#1
+defenseClean<-defenseClean %>%
+  pivot_longer(Tackles_Solo:Pass_PB, names_to = 'stat')
+```
+
+## Compare the distributions of the defensive statistics. What defensive skills are rare?
+
+```{r}
+#2
+sumOfStats <- defenseClean %>%
+  group_by(stat) %>%
+  summarise(sum = sum(value)) %>%
+  arrange(sum)
+
+print(sumOfStats)
+
+ggplot(defenseClean, aes(x=value)) + geom_histogram(bins=10) + facet_wrap(~stat) + ggtitle('Histograms of Defensive Stats bins=10') + xlab('Value of Defensive Stats') + ylab('Count of Defensive Stats')
+
+ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat = 'identity') + coord_flip() + labs(x = 'Stat', y = 'Frequency', title = 'Defensive Stats Freq')
+```
+
+```{r}
+#3 stiil in working
+iowaVSnotreDame <- defenseClean %>%
+  group_by(Opponent_Opponent) %>%
+  filter( Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa" ) %>%
+  filter(stat == "Tackles_Solo")
+
+str(iowaVSnotreDame)
+
+```
+
+```{r}
+#4
+biographyClean <- biographyClean %>%
+  separate(Hometown, c('City', 'State'), sep =", ")
+str(biographyClean)
+```
+
+```{r}
+#5
+playersPerState <- biographyClean %>%
+      group_by(State) %>%
+      summarize(count = n()) %>%
+      distinct(State, count) %>%
+      arrange(desc(count), State)
+
+print(playersPerState)
+```
+
+## Part Three: Joining Data Frames
+
+1. Find which states do the ISU defensive and offensive players come from. Create an appropriate summary.
+
+```{r}
+defenseNames <- as_tibble_col(unique(defenseClean$Name)) %>% rename(
+  Name = value
+)
+
+defenseStates <- left_join(x = defenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+defenseStates <-as_tibble_col(unique(defenseStates$State)) %>% rename(
+  State = value
+)
+
+offenseNames <- as_tibble_col(unique(offenseClean$Name)) %>% rename(
+  Name = value
+)
+offenseStates <- left_join(x = offenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+
+offenseStates <- as_tibble_col(unique(offenseStates$State)) %>% rename(
+  State = value
+)
+allStates = NULL
+allStates$defenseStates <- defenseStates$State
+allStates$offenseStates <- append(offenseStates$State, '')
+as_tibble(allStates)
+```
+
+2. How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+
+```{r}
+
+```
+
+
+
+
+
+
+
