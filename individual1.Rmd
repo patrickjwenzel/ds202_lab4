@@ -30,6 +30,7 @@ offense <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Offensiv
 biography <- read_excel('../ds202_lab4/cyclonesFootball2019.xlsx', sheet='Biography')
 str(defense)
 ```
+## Part 1: Cleaning data
 ```{r}
 
 offenseClean <- offense %>%
@@ -55,5 +56,56 @@ str(defenseClean)
 str(offenseClean)
 str(biographyClean)
 
+```
+## Part 2: Tidying
+#Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+```{r}
+#1
+defenseClean<-defenseClean %>%
+  pivot_longer(Tackles_Solo:Pass_PB, names_to = 'stat')
+```
+##Compare the distributions of the defensive statistics. What defensive skills are rare?
+
+```{r}
+#2
+sumOfStats <- defenseClean %>%
+  group_by(stat) %>%
+  summarise(sum = sum(value)) %>%
+  arrange(sum)
+
+print(sumOfStats)
+
+ggplot(defenseClean, aes(x=value)) + geom_histogram(bins=10) + facet_wrap(~stat) + ggtitle('Histograms of Defensive Stats bins=10') + xlab('Value of Defensive Stats') + ylab('Count of Defensive Stats')
+
+ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat = 'identity') + coord_flip() + labs(x = 'Stat', y = 'Frequency', title = 'Defensive Stats Freq')
+```
+
+```{r}
+#3 stiil in working
+iowaVSnotreDame <- defenseClean %>%
+  group_by(Opponent_Opponent) %>%
+  filter( Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa" ) %>%
+  filter(stat == "Tackles_Solo")
+
+str(iowaVSnotreDame)
+
+```
+
+```{r}
+#4
+biographyClean <- biographyClean %>%
+  separate(Hometown, c('City', 'State'), sep =", ")
+str(biographyClean)
+```
+
+```{r}
+#5
+playersPerState <- biographyClean %>%
+      group_by(State) %>%
+      summarize(count = n()) %>%
+      distinct(State, count) %>%
+      arrange(desc(count), State)
+
+print(playersPerState)
 ```
 
