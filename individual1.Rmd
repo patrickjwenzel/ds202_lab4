@@ -94,10 +94,10 @@ iowaVSnotreDame <- defenseClean %>%
 
 str(iowaVSnotreDame) #display dataframe
 
-tackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, sum)
-averagetackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, mean)
-print(tackles)
-print(averagetackles)
+tackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, sum) #aggregate tackles sum per team
+averagetackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, mean)#aggregate tackles mean per team
+print(tackles) #print Tackles
+print(averagetackles) #print average Tackles
   
 ggplot(iowaVSnotreDame, aes(x = value, y = Name)) + facet_wrap(iowaVSnotreDame$teams) + geom_point() + ggtitle('Solo Tackles for the Iowa and Notre Dame Game') + xlab('Number of Solo Tackles Per Player') + ylab(' Football Players') 
 #Create scater plot of Iowa and Notre Dame Players for Solo Tackles for each player.
