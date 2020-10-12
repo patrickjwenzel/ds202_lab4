@@ -52,9 +52,9 @@ biographyClean <- biography %>%
   select(-feet, -inches)
   #cleaning the biography
 
-str(defenseClean)
-str(offenseClean)
-str(biographyClean)
+str(defenseClean) #print dataset
+str(offenseClean) #print dataset
+str(biographyClean) #print dataset
 
 ```
 ## Part 2: Tidying
@@ -68,44 +68,51 @@ defenseClean<-defenseClean %>%
 
 ```{r}
 #2
-sumOfStats <- defenseClean %>%
-  group_by(stat) %>%
-  summarise(sum = sum(value)) %>%
+sumOfStats <- defenseClean %>% 
+  group_by(stat) %>% #group by statistics
+  summarise(sum = sum(value)) %>% #get the sum
   arrange(sum)
 
-print(sumOfStats)
+print(sumOfStats) #print the dataset
 
 ggplot(defenseClean, aes(x=value)) + geom_histogram(bins=10) + facet_wrap(~stat) + ggtitle('Histograms of Defensive Stats bins=10') + xlab('Value of Defensive Stats') + ylab('Count of Defensive Stats')
+#create histogram of Defensive Stats
 
 ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat = 'identity') + coord_flip() + labs(x = 'Stat', y = 'Frequency', title = 'Defensive Stats Freq')
+#create bar chart of Defensive Stats
 ```
 
 ```{r}
-#3 stiil in working
+#3
 iowaVSnotreDame <- defenseClean %>%
-  group_by(Opponent_Opponent) %>%
-  filter( Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa" ) %>%
-  filter(stat == "Tackles_Solo")
+  group_by(Opponent_Opponent) %>% #group by teams
+  filter( Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa" ) %>% #filters by Iowa or Notre Dame
+  filter(stat == "Tackles_Solo") %>% #filter by Solo Tackles
+  rename(teams = Opponent_Opponent) #rename column
 
-str(iowaVSnotreDame)
+str(iowaVSnotreDame) #display dataframe
 
+  
+ggplot(iowaVSnotreDame, aes(x = value, y = Name)) + facet_wrap(iowaVSnotreDame$teams) + geom_point() + ggtitle('Solo Tackles for the Iowa and Notre Dame Game') + xlab('Number of Solo Tackles') + ylab(' Football Players') 
+#Create scater plot of Iowa and Notre Dame Players for Solo Tackles for each player.
+# Use facet_wrap() to to show teams variables: Iowa and Notre Dame
 ```
 
 ```{r}
 #4
 biographyClean <- biographyClean %>%
-  separate(Hometown, c('City', 'State'), sep =", ")
-str(biographyClean)
+  separate(Hometown, c('City', 'State'), sep =", ") #create 2 columns City and State from Hometown.
+str(biographyClean) #print clean biography dataset
 ```
 
 ```{r}
 #5
 playersPerState <- biographyClean %>%
-      group_by(State) %>%
-      summarize(count = n()) %>%
-      distinct(State, count) %>%
-      arrange(desc(count), State)
+      group_by(State) %>% #group by state
+      summarize(count = n()) %>% #tally
+      distinct(State, count) %>% #get distinct values
+      arrange(count, State) #arrange state by count
 
-print(playersPerState)
+print(playersPerState) #print dataset
 ```
 
