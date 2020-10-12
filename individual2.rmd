@@ -1,7 +1,7 @@
 ---
-title: "lab 4"
-author: "Kordell Schrock"
-date: "10/7/2020"
+title: "Lab 4"
+author: "Patrick Wenzel"
+date: "10/11/2020"
 output: html_document
 ---
 
@@ -30,7 +30,9 @@ offense <- read_excel('./cyclonesFootball2019.xlsx', sheet='Offensive')
 biography <- read_excel('./cyclonesFootball2019.xlsx', sheet='Biography')
 str(defense)
 ```
+
 ## Part 1: Cleaning data
+
 ```{r}
 
 offenseClean <- offense %>%
@@ -57,14 +59,18 @@ str(offenseClean)
 str(biographyClean)
 
 ```
+
 ## Part 2: Tidying
-#Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+
+# Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+
 ```{r}
 #1
 defenseClean<-defenseClean %>%
   pivot_longer(Tackles_Solo:Pass_PB, names_to = 'stat')
 ```
-##Compare the distributions of the defensive statistics. What defensive skills are rare?
+
+## Compare the distributions of the defensive statistics. What defensive skills are rare?
 
 ```{r}
 #2
@@ -108,4 +114,44 @@ playersPerState <- biographyClean %>%
 
 print(playersPerState)
 ```
+
+## Part Three: Joining Data Frames
+
+1. Find which states do the ISU defensive and offensive players come from. Create an appropriate summary.
+
+```{r}
+defenseNames <- as_tibble_col(unique(defenseClean$Name)) %>% rename(
+  Name = value
+)
+
+defenseStates <- left_join(x = defenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+defenseStates <-as_tibble_col(unique(defenseStates$State)) %>% rename(
+  State = value
+)
+
+offenseNames <- as_tibble_col(unique(offenseClean$Name)) %>% rename(
+  Name = value
+)
+offenseStates <- left_join(x = offenseNames, y = biographyClean, by = c('Name')) %>% select(State)
+
+offenseStates <- as_tibble_col(unique(offenseStates$State)) %>% rename(
+  State = value
+)
+allStates = NULL
+allStates$defenseStates <- defenseStates$State
+allStates$offenseStates <- append(offenseStates$State, '')
+as_tibble(allStates)
+```
+
+2. How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+
+```{r}
+
+```
+
+
+
+
+
+
 
