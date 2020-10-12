@@ -36,19 +36,19 @@ str(defense)
 offenseClean <- offense %>%
   mutate(Name = factor(Name),
          Opponent_Opponent = factor(Opponent_Opponent)) %>%
-  mutate(across(Rushing_ATT:Passing_INT, as.numeric))
+  mutate(across(Rushing_ATT:Passing_INT, as.numeric)) #Change to numeric
     #cleaning the offense
 
 defenseClean <- defense %>%
   mutate(Name = factor(Name),
          Opponent_Opponent=factor(Opponent_Opponent)) %>%
-  mutate(across(Tackles_Solo:Pass_PB, as.numeric))
+  mutate(across(Tackles_Solo:Pass_PB, as.numeric)) #Change to numeric
   #cleaning the defense
 
 biographyClean <- biography %>%
-  mutate(Weight = as.numeric(Weight)) %>%
-  separate(Height, c("feet","inches"), "-") %>%
-  mutate(Height = as.numeric(feet)* 12 + as.numeric(inches)) %>%
+  mutate(Weight = as.numeric(Weight)) %>% # Change to numeric column
+  separate(Height, c("feet","inches"), "-") %>% # create 2 columns feet and inches from Heights
+  mutate(Height = as.numeric(feet)* 12 + as.numeric(inches)) %>% #get numeric inches value from the values of the 2 new columns feet*12 + inches
   select(-feet, -inches)
   #cleaning the biography
 
@@ -57,14 +57,16 @@ str(offenseClean) #print dataset
 str(biographyClean) #print dataset
 
 ```
-## Part 2: Tidying
-#Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+# Part 2: Tidying
+## Reformat the defClean data frame into a tidy format using pivot_longer. The type of statistic (Tackles_Solo, Tackles_ASST, etc) is added as a new key column named stat.
+
 ```{r}
 #1
 defenseClean<-defenseClean %>%
   pivot_longer(Tackles_Solo:Pass_PB, names_to = 'stat')
 ```
-##Compare the distributions of the defensive statistics. What defensive skills are rare?
+## 2 Compare the distributions of the defensive statistics. What defensive skills are rare?
+### 2: While looking at the BarChart we see that TurnOver_FF, TurnOver_FR, and TurnOver_INT are the rarest. Then looking into the Histogram we see again that TurnOver_FF, TurnOver_FR, and TurnOver_INT are the rarest. 
 
 ```{r}
 #2
@@ -78,41 +80,43 @@ print(sumOfStats) #print the dataset
 ggplot(defenseClean, aes(x=value)) + geom_histogram(bins=10) + facet_wrap(~stat) + ggtitle('Histograms of Defensive Stats bins=10') + xlab('Value of Defensive Stats') + ylab('Count of Defensive Stats')
 #create histogram of Defensive Stats
 
-ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat = 'identity') + coord_flip() + labs(x = 'Stat', y = 'Frequency', title = 'Defensive Stats Freq')
+ggplot(defenseClean, aes(x = reorder(stat, value), y = value)) + geom_bar(stat = 'identity') + coord_flip() + labs(x = 'defensive skills', y = 'Frequency', title = 'Defensive Stats Freq')
 #create bar chart of Defensive Stats
 ```
-
+## 3. Did ISU have better defense against Iowa or Notre Dame? Answer this question by creating a scatterplot with x- and y-axes being the number of solo tackles (of each player). A large number of solo tackles is an indicator of good defense.
+ 
+### 3: Looking at the Scatter Plot Notre Dame seems to have higher counts of Solo Tackles per player. So Notre Dame must have had a better defence than Iowa. Also looking at the statistical data of aggregating the teams with solo tackles we see again Notre Dame beats Iowa in sum of Tackles and average tackles per player.
 ```{r}
 #3
 iowaVSnotreDame <- defenseClean %>%
-  group_by(Opponent_Opponent) %>% #group by teams
-  filter( Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa" ) %>% #filters by Iowa or Notre Dame
-  filter(stat == "Tackles_Solo") %>% #filter by Solo Tackles
+  filter(stat == "Tackles_Solo" & (Opponent_Opponent == "Notre Dame" | Opponent_Opponent == "Iowa")) %>% #filter by Solo Tackles and team either Notre Dame or Iowa
   rename(teams = Opponent_Opponent) #rename column
 
 str(iowaVSnotreDame) #display dataframe
 
+tackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, sum) #aggregate tackles sum per team
+averagetackles<- aggregate(iowaVSnotreDame$value ~ iowaVSnotreDame$teams , data=iowaVSnotreDame, mean)#aggregate tackles mean per team
+print(tackles) #print Tackles
+print(averagetackles) #print average Tackles
   
-ggplot(iowaVSnotreDame, aes(x = value, y = Name)) + facet_wrap(iowaVSnotreDame$teams) + geom_point() + ggtitle('Solo Tackles for the Iowa and Notre Dame Game') + xlab('Number of Solo Tackles') + ylab(' Football Players') 
+ggplot(iowaVSnotreDame, aes(x = value, y = Name)) + facet_wrap(iowaVSnotreDame$teams) + geom_point() + ggtitle('Solo Tackles for the Iowa and Notre Dame Game') + xlab('Number of Solo Tackles Per Player') + ylab(' Football Players') 
 #Create scater plot of Iowa and Notre Dame Players for Solo Tackles for each player.
 # Use facet_wrap() to to show teams variables: Iowa and Notre Dame
 ```
-
+## 4. Separate the Hometown column into two columns, namely the city and the state. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
 ```{r}
 #4
 biographyClean <- biographyClean %>%
   separate(Hometown, c('City', 'State'), sep =", ") #create 2 columns City and State from Hometown.
-str(biographyClean) #print clean biography dataset
+head(biographyClean) #head of clean biography dataset
 ```
-
+## How many players are there from each state?
 ```{r}
 #5
 playersPerState <- biographyClean %>%
       group_by(State) %>% #group by state
       summarize(count = n()) %>% #tally
-      distinct(State, count) %>% #get distinct values
-      arrange(count, State) #arrange state by count
-
+     
 print(playersPerState) #print dataset
 ```
 
